@@ -220,14 +220,21 @@ iframeScope.activateComponent = function (id, componentName, $event) {
 };
 
 function setPlainClassAttribute(newVal) {
-    if (iframeScope.component.active.id === 0) {
+    const componentId = iframeScope.component.active.id;
+    const componentName = iframeScope.component.active.name;
+
+    if (componentId === 0) {
         return;
     }
 
-    const activeComponent = iframeScope.component.options[iframeScope.component.active.id];
+    const activeComponent = iframeScope.component.options[componentId];
 
     if (activeComponent.model === undefined) {
         return;
+    }
+
+    if (activeComponent.model['custom-attributes'] === undefined) {
+        oxygenScope.addCustomAttribute('plainclass', newVal);
     }
 
     const custAttrs = activeComponent.model['custom-attributes'];
@@ -243,13 +250,32 @@ function setPlainClassAttribute(newVal) {
         });
     }
 
-    iframeScope.applyCustomAttributes(iframeScope.component.active.id);
+    iframeScope.component.options[componentId].model['custom-attributes'] = custAttrs;
+    iframeScope.setOption(componentId, componentName, 'custom-attributes');
+
+    iframeScope.applyCustomAttributes(componentId);
 };
 
 watch([activeElementId, visibleElementPanel], (newVal, oldVal) => {
     if (newVal[0] !== oldVal[0]) {
         nextTick(() => {
-            const custAttrs = iframeScope.component.options[iframeScope.component.active.id].model['custom-attributes'];
+            const componentId = iframeScope.component.active.id;
+
+            if (componentId === 0) {
+                return;
+            }
+
+            const activeComponent = iframeScope.component.options[componentId];
+
+            if (activeComponent.model === undefined) {
+                return;
+            }
+
+            if (activeComponent.model['custom-attributes'] === undefined) {
+                oxygenScope.addCustomAttribute('plainclass', '');
+            }
+
+            const custAttrs = activeComponent.model['custom-attributes'];
             textInput.value = custAttrs?.find(attr => attr.name === 'plainclass')?.value || '';
 
             onTextInputChanges();
