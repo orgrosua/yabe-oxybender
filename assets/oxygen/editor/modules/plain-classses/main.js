@@ -17,8 +17,7 @@ import tippy, { followCursor } from 'tippy.js';
 import { nextTick, ref, watch } from 'vue';
 import autosize from 'autosize';
 import Tribute from 'tributejs';
-import { getHighlighter } from 'shiki';
-import { debounce } from 'lodash-es';
+import { getHighlighterCore, loadWasm } from 'shiki/core';
 
 import HighlightInTextarea from './highlight-in-textarea';
 import { oxygenScope, iframeScope, oxyIframe } from '../../constant.js';
@@ -26,9 +25,15 @@ import { oxygenScope, iframeScope, oxyIframe } from '../../constant.js';
 let shikiHighlighter = null;
 
 (async () => {
-    shikiHighlighter = await getHighlighter({
-        themes: ['dark-plus', 'light-plus'],
-        langs: ['css'],
+    await loadWasm(import('shiki/onig.wasm?init'));
+    shikiHighlighter = await getHighlighterCore({
+        themes: [
+            import('shiki/themes/dark-plus.mjs'),
+            import('shiki/themes/light-plus.mjs'),
+        ],
+        langs: [
+            import('shiki/langs/css.mjs'),
+        ],
     });
 })();
 
@@ -346,8 +351,14 @@ function hoverPreviewProvider() {
 
     let detectedMarkWordElement = null;
 
+    const hitContainerEl = document.querySelector('.hit-container');
+
+    if (hitContainerEl === null) {
+        return;
+    }
+
     // when mouse are entering the `.hit-container` element, get the coordinates of the mouse and check if the mouse is hovering the `mark` element
-    document.querySelector('.hit-container').addEventListener('mousemove', function (event) {
+    hitContainerEl.addEventListener('mousemove', function (event) {
         const x = event.clientX;
         const y = event.clientY;
 
@@ -424,7 +435,7 @@ function hoverPreviewProvider() {
     });
 
     // on mouse leave the `.hit-container` element, hide all tippy
-    document.querySelector('.hit-container').addEventListener('mouseleave', function (event) {
+    hitContainerEl.addEventListener('mouseleave', function (event) {
         someTippyIsVisible = false;
 
         registeredTippyElements.forEach((tippyInstance) => {
